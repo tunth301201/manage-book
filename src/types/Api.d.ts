@@ -18,7 +18,7 @@ export namespace Api {
 
   namespace GetBookList {
     interface Response {
-      data: any[];
+      data: any;
     }
   }
 
@@ -49,7 +49,7 @@ export namespace Api {
 
   namespace GetTransactionList {
     interface Response {
-      data: any[];
+      data: any;
     }
   }
 
@@ -65,13 +65,13 @@ export namespace Api {
 
   namespace GetAuthorList {
     interface Response {
-      data: any[]
+      data: any
     }
   }
 
   namespace GetCategoryList {
     interface Response {
-      data: any[]
+      data: any
     }
   }
 

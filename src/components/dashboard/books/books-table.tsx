@@ -154,6 +154,7 @@ export default function BooksTable() {
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
+  const transformResponseBookData = (response: any) => response?.data?.data?.books || [];
   const transformResponseData = (response: any) => response?.data?.data || [];
 
   const {
@@ -178,7 +179,7 @@ export default function BooksTable() {
     setPagination((prev) => ({ ...prev, current: page }));
   };
 
-  const fetchedBooks = transformResponseData(rawData);
+  const fetchedBooks = transformResponseBookData(rawData);
   const listAuthor = transformResponseData(authorData);
   const listCategory = transformResponseData(categoryData);
 
@@ -325,7 +326,10 @@ export default function BooksTable() {
                 onChange={handleChange}
                 renderValue={(selected) =>
                   selected
-                    .map((authorId) => listAuthor?.find((author: any) => author?.id === authorId)?.name)
+                    .map((authorId) => {
+                      const findAuthor = listAuthor?.find((author: any) => author?.id === authorId);
+                      return `${findAuthor?.first_name} ${findAuthor?.last_name}`;
+                    })
                     .join(', ')
                 }
               >
@@ -675,14 +679,16 @@ export default function BooksTable() {
       <MaterialReactTable table={table} />
 
       {/* Page */}
-      <Pagination
-        count={2}
-        page={pagination.current}
-        onChange={handleChangePagination}
-        sx={{
-          alignSelf: 'end',
-        }}
-      />
+      {rawData?.data?.data?.total_page > 0 && (
+        <Pagination
+          count={rawData?.data?.data?.total_page}
+          page={pagination.current}
+          onChange={handleChangePagination}
+          sx={{
+            alignSelf: 'end',
+          }}
+        />
+      )}
     </>
   );
 }

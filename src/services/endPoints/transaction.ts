@@ -19,7 +19,7 @@ export const createBorrowForm = async (
 export const getBorrowForm = async (
   params: Params.QueryBorrowForm = DEFAULT_QUERY_PARAMS
 ): Promise<Api.GetTransactionList.Response> => {
-  const url = END_POINT;
+  const url = END_POINT + "/search";
   return await AxiosInstance.get(url, {
     cancelToken: axios.CancelToken.source().token,
     params: params,

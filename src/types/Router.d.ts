@@ -16,5 +16,6 @@ export declare namespace Params {
     sort_by?: string;
     order?: string;
     keyword?: string
+    status?: string
   }
 }

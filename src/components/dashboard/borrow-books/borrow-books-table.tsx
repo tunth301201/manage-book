@@ -8,7 +8,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import {
   Box,
   Button,
-  Checkbox,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -47,21 +46,33 @@ export default function BorrowBookTable() {
   const columns = useMemo<MRT_ColumnDef<any>[]>(
     () => [
       {
-        accessorKey: 'book_id',
+        accessorKey: 'book',
         header: 'Book Id',
         enableEditing: false,
         size: 80,
         enableHiding: true,
+        Cell: ({ cell }) => {
+          const bookData: any = cell.getValue();
+          return <Typography fontSize={'14px'}>{bookData?.book_id}</Typography>;
+        },
       },
       {
-        accessorKey: 'book_title',
+        accessorKey: 'book',
         header: 'Title',
         enableEditing: false,
+        Cell: ({ cell }) => {
+          const bookData: any = cell.getValue();
+          return <Typography fontSize={'14px'}>{bookData?.book_title}</Typography>;
+        },
       },
       {
-        accessorKey: 'book_authors',
+        accessorKey: 'book',
         header: 'Author',
-        Cell: ({ cell }) => (cell.getValue() as any[])?.map((author) => `${author}`).join(', '),
+        Cell: ({ cell }) => {
+          const bookData: any = cell.getValue();
+          const authorList = bookData?.book_authors?.join(', ');
+          return <Typography fontSize={'14px'}>{authorList}</Typography>;
+        },
       },
       {
         accessorKey: 'due_date',
@@ -112,6 +123,9 @@ export default function BorrowBookTable() {
 
   const transformResponseData = (response: any) => response?.data?.data?.items || [];
 
+  // handle filter status
+  const [selectedStatus, setSelectedStatus] = useState<string>();
+
   const {
     data: rawData,
     isLoading,
@@ -122,6 +136,7 @@ export default function BorrowBookTable() {
       page: pagination.current,
       page_size: pagination.pageSize,
       keyword,
+      status: selectedStatus,
     },
     DEFAULT_REFETCH_OPTIONS
   );
@@ -262,6 +277,7 @@ export default function BorrowBookTable() {
                   sx={{
                     flex: 1,
                   }}
+                  disableFuture
                 />
 
                 <DatePicker
@@ -315,8 +331,8 @@ export default function BorrowBookTable() {
       const oldFormData = row?.original;
 
       const [formValues, setFormValues] = useState({
-        book_id: oldFormData?.book_id || '',
-        book_title: oldFormData?.book_title || '',
+        book_id: oldFormData?.book?.book_id || '',
+        book_title: oldFormData?.book?.book_title || '',
         borrow_date: dayjs(oldFormData?.borrow_date || new Date()),
         return_date: dayjs(oldFormData?.return_date || new Date()),
         issue: oldFormData?.issue || '',
@@ -433,6 +449,7 @@ export default function BorrowBookTable() {
                   />
                 )}
                 disablePast
+                disableFuture
                 sx={{
                   flex: 1,
                 }}
@@ -515,17 +532,9 @@ export default function BorrowBookTable() {
     initialState: { columnVisibility: {} },
   });
 
-  // handle filter status
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-
   const handleChangeStatus = (selected: string) => {
-    setSelectedStatus((prevSelectedStatus) => {
-      if (prevSelectedStatus.includes(selected)) {
-        return prevSelectedStatus.filter((status) => status !== selected);
-      } else {
-        return [...prevSelectedStatus, selected];
-      }
-    });
+      setSelectedStatus(selected);
+    
   };
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -576,11 +585,12 @@ export default function BorrowBookTable() {
             onClick={handleClick}
             sx={{
               height: '100%',
+              color: 'none',
             }}
             variant="outlined"
           >
             <FilterAltIcon />
-            Status ({selectedStatus?.length})
+            {selectedStatus && selectedStatus != "All" ? selectedStatus : 'Status'}
           </Button>
           <Menu
             id="basic-menu"
@@ -594,20 +604,19 @@ export default function BorrowBookTable() {
               marginTop: '10px',
             }}
           >
+            <MenuItem value="Borrowed" onClick={() => handleChangeStatus('All')}>
+              <ListItemText primary="All" />
+            </MenuItem>
             <MenuItem value="Borrowed" onClick={() => handleChangeStatus('Borrowed')}>
-              <Checkbox checked={selectedStatus.includes('Borrowed')} />
               <ListItemText primary="Borrowed" />
             </MenuItem>
             <MenuItem value="Overdue" onClick={() => handleChangeStatus('Overdue')}>
-              <Checkbox checked={selectedStatus.includes('Overdue')} />
               <ListItemText primary="Overdue" />
             </MenuItem>
             <MenuItem value="Returned" onClick={() => handleChangeStatus('Returned')}>
-              <Checkbox checked={selectedStatus.includes('Returned')} />
               <ListItemText primary="Returned" />
             </MenuItem>
             <MenuItem value="Returned Late" onClick={() => handleChangeStatus('Returned Late')}>
-              <Checkbox checked={selectedStatus.includes('Returned Late')} />
               <ListItemText primary="Returned Late" />
             </MenuItem>
           </Menu>
