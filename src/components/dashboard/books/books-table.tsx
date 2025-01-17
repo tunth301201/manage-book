@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { DEFAULT_REFETCH_OPTIONS } from '@/constants';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -26,8 +27,9 @@ import {
   Tooltip,
 } from '@mui/material';
 import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef, type MRT_Row } from 'material-react-table';
-import { useMemo, useState } from 'react';
+import { useSnackbar } from 'notistack';
 
+import { Api } from '@/types';
 import {
   useCreateBook,
   useDeleteBook,
@@ -36,7 +38,6 @@ import {
   useGetCategories,
   useUpdateBook,
 } from '@/hooks/books';
-import { Api } from '@/types';
 
 import './style.css';
 
@@ -183,6 +184,8 @@ export default function BooksTable() {
   const listAuthor = transformResponseData(authorData);
   const listCategory = transformResponseData(categoryData);
 
+  const { enqueueSnackbar } = useSnackbar();
+
   //call CREATE hook
   const { mutateAsync: createBook, isPending: isCreatingBook } = useCreateBook();
 
@@ -193,10 +196,21 @@ export default function BooksTable() {
   const { mutateAsync: deleteBook, isPending: isDeletingBook } = useDeleteBook();
 
   //DELETE action
-  const openDeleteConfirmModal = (row: MRT_Row<any>) => {
+  const openDeleteConfirmModal = async (row: MRT_Row<any>) => {
     if (window.confirm('Are you sure you want to delete this book?')) {
-      deleteBook(row.original.id);
-      refetchBooks();
+      try {
+        const res = await deleteBook(row.original.id);
+
+        if (res?.data?.response_code == 400) {
+          enqueueSnackbar('Delete book failed!', { variant: 'error', autoHideDuration: 3000 });
+        } else {
+          enqueueSnackbar('Delete book successfully!', { variant: 'success', autoHideDuration: 3000 });
+        }
+
+        refetchBooks();
+      } catch (e) {
+        enqueueSnackbar('Delete book failed!', { variant: 'error', autoHideDuration: 3000 });
+      }
     }
   };
 
@@ -259,8 +273,19 @@ export default function BooksTable() {
           categories: formValues.categories,
         };
 
-        await createBook(payload);
-        refetchBooks();
+        try {
+          const res = await createBook(payload);
+
+          if (res?.data?.response_code == 400) {
+            enqueueSnackbar('Create book fail!', { variant: 'error', autoHideDuration: 3000 });
+          } else {
+            enqueueSnackbar('Create book successfully!', { variant: 'success', autoHideDuration: 3000 });
+          }
+
+          refetchBooks();
+        } catch (e) {
+          enqueueSnackbar('Create book fail!', { variant: 'error', autoHideDuration: 3000 });
+        }
 
         table.setCreatingRow(null);
       };
@@ -454,11 +479,22 @@ export default function BooksTable() {
           categories: formValues.categories,
         };
 
-        await updateBook({
-          id: oldBookData.id,
-          data: payload,
-        });
-        refetchBooks();
+        try {
+          const res = await updateBook({
+            id: oldBookData.id,
+            data: payload,
+          });
+
+          if (res?.data?.response_code == 400) {
+            enqueueSnackbar('Edit book fail!', { variant: 'error', autoHideDuration: 3000 });
+          } else {
+            enqueueSnackbar('Edit book successfully!', { variant: 'success', autoHideDuration: 3000 });
+          }
+
+          refetchBooks();
+        } catch (e) {
+          enqueueSnackbar('Edit book fail!', { variant: 'error', autoHideDuration: 3000 });
+        }
 
         table.setEditingRow(null);
       };

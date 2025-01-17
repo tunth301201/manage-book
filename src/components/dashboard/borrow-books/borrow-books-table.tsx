@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_REFETCH_OPTIONS } from '@/constants';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -21,7 +22,7 @@ import {
   Stack,
   TextField,
   Tooltip,
-  Typography
+  Typography,
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -34,9 +35,10 @@ import {
   type MRT_ColumnDef,
   type MRT_Row,
 } from 'material-react-table';
-import { useEffect, useMemo, useState } from 'react';
 
 import './style.css';
+
+import { useSnackbar } from 'notistack';
 
 import { useCreateBorrowForm, useDeleteBorrowForm, useGetBorrowForms, useUpdateBorrowForm } from '@/hooks/transaction';
 
@@ -145,6 +147,8 @@ export default function BorrowBookTable() {
     setPagination((prev) => ({ ...prev, current: page }));
   };
 
+  const { enqueueSnackbar } = useSnackbar();
+
   const fetchedBorrowForms = transformResponseData(rawData);
 
   //call CREATE hook
@@ -157,10 +161,21 @@ export default function BorrowBookTable() {
   const { mutateAsync: deleteBorrowForm, isPending: isDeletingBorrowForm } = useDeleteBorrowForm();
 
   //DELETE action
-  const openDeleteConfirmModal = (row: MRT_Row<any>) => {
+  const openDeleteConfirmModal = async (row: MRT_Row<any>) => {
     if (window.confirm('Are you sure you want to delete this form?')) {
-      deleteBorrowForm(row.original.id);
-      refetchBorrowForms();
+      try {
+        const res = await deleteBorrowForm(row.original.id);
+
+        if (res?.data?.response_code == 400) {
+          enqueueSnackbar('Delete borrow form fail!', { variant: 'success', autoHideDuration: 3000 });
+        } else {
+          enqueueSnackbar('Delete borrow form successfully!', { variant: 'success', autoHideDuration: 3000 });
+        }
+
+        refetchBorrowForms();
+      } catch (e) {
+        enqueueSnackbar('Delete borrow form fail!', { variant: 'success', autoHideDuration: 3000 });
+      }
     }
   };
 
@@ -230,8 +245,19 @@ export default function BorrowBookTable() {
           manager_id: 3,
         };
 
-        await createBorrowForm(payload);
-        refetchBorrowForms();
+        try {
+          const res = await createBorrowForm(payload);
+
+          if (res?.data?.response_code == 400) {
+            enqueueSnackbar('Create borrow form fail!', { variant: 'error', autoHideDuration: 3000 });
+          } else {
+            enqueueSnackbar('Create borrow form successfully!', { variant: 'success', autoHideDuration: 3000 });
+          }
+
+          refetchBorrowForms();
+        } catch (e) {
+          enqueueSnackbar('Create borrow form fail!', { variant: 'error', autoHideDuration: 3000 });
+        }
 
         table.setCreatingRow(null);
       };
@@ -370,8 +396,19 @@ export default function BorrowBookTable() {
           manager_id: 3,
         };
 
-        await updateBorrowForm({ id: row?.original?.id, data: payload });
-        refetchBorrowForms();
+        try {
+          const res = await updateBorrowForm({ id: row?.original?.id, data: payload });
+
+          if (res?.data?.response_code == 400) {
+            enqueueSnackbar('Edit borrow form fail!', { variant: 'error', autoHideDuration: 3000 });
+          } else {
+            enqueueSnackbar('Edit borrow form successfully!', { variant: 'success', autoHideDuration: 3000 });
+          }
+
+          refetchBorrowForms();
+        } catch (e) {
+          enqueueSnackbar('Edit borrow form fail!', { variant: 'error', autoHideDuration: 3000 });
+        }
 
         table.setEditingRow(null);
       };
@@ -533,8 +570,7 @@ export default function BorrowBookTable() {
   });
 
   const handleChangeStatus = (selected: string) => {
-      setSelectedStatus(selected);
-    
+    setSelectedStatus(selected);
   };
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -590,7 +626,7 @@ export default function BorrowBookTable() {
             variant="outlined"
           >
             <FilterAltIcon />
-            {selectedStatus && selectedStatus != "All" ? selectedStatus : 'Status'}
+            {selectedStatus && selectedStatus != 'All' ? selectedStatus : 'Status'}
           </Button>
           <Menu
             id="basic-menu"
@@ -627,14 +663,16 @@ export default function BorrowBookTable() {
       <MaterialReactTable table={table} />
 
       {/* Page */}
-      <Pagination
-        count={2}
-        page={pagination.current}
-        onChange={handleChangePagination}
-        sx={{
-          alignSelf: 'end',
-        }}
-      />
+      {rawData?.data?.data?.total_page > 0 && (
+        <Pagination
+          count={rawData?.data?.data?.total_page}
+          page={pagination.current}
+          onChange={handleChangePagination}
+          sx={{
+            alignSelf: 'end',
+          }}
+        />
+      )}
     </>
   );
 }
